@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Golf Booking OS v3</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #06212A;
+      --primary-2: #092F3B;
+      --accent: #F0442E;
+      --accent-dark: #D92D20;
+      --bg: #F4F7F7;
+      --card: #FFFFFF;
+      --text: #111827;
+      --muted: #6B7280;
+      --line: #E5E7EB;
+      --success: #067647;
+      --warning: #F79009;
+      --danger: #D92D20;
+      --radius: 22px;
+      --shadow: 0 18px 40px rgba(6,33,42,.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(240,68,46,.16), transparent 38%),
+        linear-gradient(180deg, #F8FAFA 0%, #EEF4F4 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans Thai", "Prompt", "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px 18px 98px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: var(--primary);
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-title { font-size: 14px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+    .brand-subtitle { font-size: 15px; font-weight: 700; color: var(--primary); }
+
+    h1 {
+      font-size: 38px;
+      line-height: 1.06;
+      letter-spacing: -1px;
+      margin: 24px 0 10px;
+      color: var(--primary);
+    }
+    .lead { font-size: 17px; color: var(--muted); line-height: 1.6; margin: 0 0 22px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(240,68,46,.24);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      background: rgba(255,255,255,.75);
+      margin-left: auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(6,33,42,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin: 14px 0;
+    }
+
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .quick-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      background: #fff;
+      cursor: pointer;
+      min-height: 120px;
+    }
+    .quick-card .icon { font-size: 32px; margin-bottom: 8px; }
+    .quick-card .title { font-weight: 900; color: var(--primary); font-size: 18px; }
+    .quick-card .desc { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.45; }
+
+    .form-group { margin: 14px 0; }
+    label { display: block; font-weight: 900; color: var(--primary); margin: 0 0 8px; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 14px;
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(240,68,46,.12); }
+
+    .date-chips { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 10px;
+      background: #fff;
+      text-align: center;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 18px;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--line); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .status-box {
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #fff;
+      margin-top: 14px;
+    }
+    .status-box.ok { border-color: rgba(6,118,71,.25); background: #ECFDF3; }
+    .status-box.warn { border-color: rgba(247,144,9,.30); background: #FFFAEB; }
+    .status-box.err { border-color: rgba(217,45,32,.24); background: #FEF3F2; }
+
+    .summary-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .k { color: var(--muted); }
+    .summary-row .v { font-weight: 900; text-align: right; }
+
+    .booking-item {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      margin: 10px 0;
+    }
+    .tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      background: #EEF2FF;
+      color: #3538CD;
+    }
+    .tag.pending { background: #FFFAEB; color: #B54708; }
+    .tag.confirmed { background: #ECFDF3; color: #067647; }
+    .tag.cancelled { background: #FEF3F2; color: #B42318; }
+
+    .bottom-nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: center;
+      z-index: 50;
+    }
+    .nav-inner { max-width: 520px; width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .nav-btn {
+      border: none; background: transparent; color: var(--muted);
+      font-weight: 900; padding: 10px 6px; border-radius: 18px;
+      font-size: 13px;
+    }
+    .nav-btn.active { background: var(--primary); color: #fff; }
+    .hidden { display: none !important; }
+    .small { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .loading {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .error {
+      background: #FEF3F2;
+      color: #B42318;
+      border: 1px solid #FDA29B;
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      font-weight: 700;
+      margin: 18px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="brand">
+      <div class="logo"><img src="./assets/golf_booking_os_logo.png" onerror="this.style.display='none'; this.parentNode.textContent='⛳'"></div>
+      <div>
+        <div class="brand-title" id="brandName">Golf Booking OS</div>
+        <div class="brand-subtitle">Simulator-first v3</div>
+      </div>
+      <div class="pill" id="modePill">LIVE LIFF</div>
+    </div>
+
+    <section id="page-home">
+      <h1>จองห้องซ้อมผ่าน LINE</h1>
+      <p class="lead">เลือกเวลาเริ่ม-สิ้นสุด เลือก Bay/Room ได้ และชำระมัดจำเพื่อลด no-show</p>
+
+      <div id="initState" class="loading">กำลังโหลดระบบ...</div>
+
+      <div id="homeContent" class="hidden">
+        <div class="card">
+          <div class="summary-row">
+            <span class="k">ผู้ใช้งาน</span>
+            <span class="v" id="displayName">-</span>
+          </div>
+          <div class="summary-row">
+            <span class="k">ชั่วโมงคงเหลือ</span>
+            <span class="v"><span id="remainingHours">0</span> ชม.</span>
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <div class="quick-card" onclick="showPage('simulator')">
+            <div class="icon">🏌️</div>
+            <div class="title">จองห้องซ้อม</div>
+            <div class="desc">เลือกวัน เวลาเริ่ม-จบ และ Bay/Room</div>
+          </div>
+          <div class="quick-card" onclick="sendTrialChat()">
+            <div class="icon">👨‍🏫</div>
+            <div class="title">สนใจ Trial</div>
+            <div class="desc">ทักแอดมิน/โปรก่อน แล้วค่อยกรอก intake form</div>
+          </div>
+          <div class="quick-card" onclick="showPage('bookings')">
+            <div class="icon">✅</div>
+            <div class="title">การจองของฉัน</div>
+            <div class="desc">ดูสถานะจองและชำระเงิน</div>
+          </div>
+          <div class="quick-card" onclick="sendContactAdmin()">
+            <div class="icon">💬</div>
+            <div class="title">ติดต่อแอดมิน</div>
+            <div class="desc">สอบถามเพิ่มเติมใน LINE</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-simulator" class="hidden">
+      <h1>จองห้องซ้อม</h1>
+      <p class="lead">เลือกเวลาแบบยืดหยุ่น รองรับช่วงครึ่งชั่วโมง เช่น 13:30–14:30</p>
+
+      <div class="card">
+        <div class="form-group">
+          <label>เลือกวันที่</label>
+          <div class="date-chips" id="dateChips"></div>
+          <input type="date" id="bookingDate">
+        </div>
+
+        <div class="form-group">
+          <label>เวลาเริ่ม</label>
+          <select id="startTime" onchange="onStartTimeChange()"></select>
+        </div>
+
+        <div class="form-group">
+          <label>เวลาสิ้นสุด</label>
+          <select id="endTime"></select>
+        </div>
+
+        <div class="form-group">
+          <label>เลือก Bay / ห้อง / เครื่อง</label>
+          <select id="resourceSelect"></select>
+          <div class="small">เลือก “ให้ระบบเลือกให้” ถ้าไม่ระบุ Bay/Room ที่ต้องการ</div>
+        </div>
+
+        <button class="btn btn-primary" onclick="checkAvailability()">ตรวจสอบเวลาว่าง</button>
+        <div id="availabilityResult"></div>
+      </div>
+    </section>
+
+    <section id="page-bookings" class="hidden">
+      <h1>การจองของฉัน</h1>
+      <p class="lead">ดูสถานะการจองและการชำระเงิน</p>
+      <div id="bookingsList"></div>
+    </section>
+
+    <section id="page-intake" class="hidden">
+      <h1>Trial Intake</h1>
+      <p class="lead">หน้านี้ใช้หลังแอดมิน/โปรคุยกับลูกค้าแล้ว เพื่อเก็บข้อมูลก่อนทดลองเรียน</p>
+      <div class="card">
+        <div class="form-group"><label>เบอร์โทร</label><input id="trialPhone" placeholder="080-000-0000"></div>
+        <div class="form-group"><label>ระดับการเล่น</label><select id="trialLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></div>
+        <div class="form-group"><label>เป้าหมาย</label><textarea id="trialGoal" placeholder="อยากแก้สวิง / เพิ่มระยะ / เริ่มเรียน"></textarea></div>
+        <button class="btn btn-primary" onclick="submitTrialIntake()">ส่งข้อมูลก่อนทดลองเรียน</button>
+        <div id="trialResult"></div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-inner">
+      <button class="nav-btn active" id="nav-home" onclick="showPage('home')">🏠<br>หน้าแรก</button>
+      <button class="nav-btn" id="nav-simulator" onclick="showPage('simulator')">🏌️<br>จองห้อง</button>
+      <button class="nav-btn" id="nav-bookings" onclick="showPage('bookings')">✅<br>ของฉัน</button>
+      <button class="nav-btn" id="nav-intake" onclick="showPage('intake')">📝<br>Intake</button>
+    </div>
+  </nav>
+
+  <script>
+    const CONFIG = {
+      DEMO_MODE: false,
+      LIFF_ID: 'YOUR_LIFF_ID',
+      GAS_WEB_APP_URL: '/api/gas',
+      BRAND_NAME: 'Golf Booking OS Demo'
+    };
+
+    const state = {
+      profile: null,
+      credit: { remaining_hours: 0 },
+      rooms: [],
+      openingHours: [],
+      settings: {},
+      timeOptions: [],
+      bookings: [],
+      lastAvailability: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    async function main() {
+      $('brandName').textContent = CONFIG.BRAND_NAME.toUpperCase();
+
+      try {
+        if (CONFIG.DEMO_MODE) {
+          $('modePill').textContent = 'DEMO';
+          state.profile = { userId: 'Udemo001', displayName: 'Demo User', pictureUrl: '' };
+        } else {
+          await initLiff();
+          state.profile = await liff.getProfile();
+        }
+
+        const data = await api('getInitialData', { profile: state.profile });
+        if (!data.success) throw new Error(data.message || 'Load failed');
+
+        state.credit = data.credit || { remaining_hours: 0 };
+        state.rooms = (data.simulator_options && data.simulator_options.rooms) || [];
+        state.openingHours = (data.simulator_options && data.simulator_options.opening_hours) || [];
+        state.settings = data.settings || {};
+        state.timeOptions = (data.simulator_options && data.simulator_options.time_options) || buildTimeOptions(30);
+        state.bookings = data.bookings || [];
+
+        renderHome();
+        renderDateChips();
+        renderTimeOptions();
+        renderRoomOptions();
+        renderBookings();
+
+        $('initState').classList.add('hidden');
+        $('homeContent').classList.remove('hidden');
+      } catch (err) {
+        $('initState').className = 'error';
+        $('initState').textContent = 'โหลดระบบไม่สำเร็จ\n' + (err.message || err);
+      }
+    }
+
+    async function initLiff() {
+      if (!CONFIG.LIFF_ID || CONFIG.LIFF_ID === 'YOUR_LIFF_ID') {
+        throw new Error('กรุณาตั้งค่า LIFF_ID ใน index.html');
+      }
+      await liff.init({ liffId: CONFIG.LIFF_ID, withLoginOnExternalBrowser: true });
+      if (!liff.isLoggedIn()) liff.login();
+    }
+
+    async function api(action, payload = {}) {
+      if (CONFIG.DEMO_MODE) return demoApi(action, payload);
+
+      const res = await fetch(CONFIG.GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'API failed');
+      return data;
+    }
+
+    function renderHome() {
+      $('displayName').textContent = state.profile.displayName || 'LINE User';
+      $('remainingHours').textContent = Number(state.credit.remaining_hours || 0);
+    }
+
+    function renderDateChips() {
+      const chips = [
+        { label: 'วันนี้', offset: 0 },
+        { label: 'พรุ่งนี้', offset: 1 },
+        { label: 'อีก 2 วัน', offset: 2 },
+        { label: 'อีก 3 วัน', offset: 3 }
+      ];
+      const wrap = $('dateChips');
+      wrap.innerHTML = '';
+      chips.forEach((c, idx) => {
+        const d = new Date();
+        d.setDate(d.getDate() + c.offset);
+        const v = d.toISOString().slice(0,10);
+        const btn = document.createElement('button');
+        btn.className = 'chip' + (idx === 0 ? ' active' : '');
+        btn.textContent = c.label;
+        btn.onclick = () => {
+          document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+          btn.classList.add('active');
+          $('bookingDate').value = v;
+        };
+        wrap.appendChild(btn);
+        if (idx === 0) $('bookingDate').value = v;
+      });
+    }
+
+    function renderTimeOptions() {
+      const start = $('startTime');
+      start.innerHTML = '';
+      state.timeOptions.filter(t => t >= '06:00' && t <= '23:00').forEach(t => {
+        start.add(new Option(t, t));
+      });
+      start.value = '13:30';
+      onStartTimeChange();
+    }
+
+    function onStartTimeChange() {
+      const startMin = toMin($('startTime').value);
+      const end = $('endTime');
+      end.innerHTML = '';
+      state.timeOptions
+        .filter(t => {
+          const m = toMin(t);
+          return m > startMin && m <= startMin + 4 * 60;
+        })
+        .forEach(t => end.add(new Option(t, t)));
+      if ([...end.options].some(o => o.value === minToTime(startMin + 60))) {
+        end.value = minToTime(startMin + 60);
+      }
+    }
+
+    function renderRoomOptions() {
+      const sel = $('resourceSelect');
+      sel.innerHTML = '';
+      sel.add(new Option('ให้ระบบเลือกห้องว่างให้', 'AUTO'));
+      state.rooms.forEach(r => {
+        const label = `${r.room_name} — ${r.position || ''} ${r.machine_type ? '(' + r.machine_type + ')' : ''}`;
+        sel.add(new Option(label, r.resource_id));
+      });
+    }
+
+    async function checkAvailability() {
+      const payload = {
+        profile: state.profile,
+        line_user_id: state.profile.userId,
+        booking_date: $('bookingDate').value,
+        start_time: $('startTime').value,
+        end_time: $('endTime').value,
+        resource_id: $('resourceSelect').value
+      };
+
+      const box = $('availabilityResult');
+      box.innerHTML = '<div class="loading">กำลังตรวจสอบเวลาว่าง...</div>';
+
+      try {
+        const data = await api('checkSimulatorAvailability', payload);
+        state.lastAvailability = data;
+
+        if (data.available) {
+          const room = data.assigned_room;
+          box.innerHTML = `
+            <div class="status-box ok">
+              <strong>ว่างค่ะ</strong>
+              <div class="summary-row"><span class="k">วันที่</span><span class="v">${data.booking_date}</span></div>
+              <div class="summary-row"><span class="k">เวลา</span><span class="v">${data.start_time}–${data.end_time}</span></div>
+              <div class="summary-row"><span class="k">ห้อง/เลน</span><span class="v">${room.room_name} ${room.position ? '— ' + room.position : ''}</span></div>
+              <div class="summary-row"><span class="k">เครื่อง</span><span class="v">${room.machine_type || '-'}</span></div>
+              <div class="summary-row"><span class="k">ระยะเวลา</span><span class="v">${data.duration_minutes / 60} ชม.</span></div>
+              <div class="summary-row"><span class="k">ยอดชำระ/มัดจำ</span><span class="v">${data.amount_due} บาท</span></div>
+              <button class="btn btn-accent" style="margin-top:14px" onclick="createBooking()">ยืนยันและรับรายละเอียดชำระเงิน</button>
+            </div>
+          `;
+        } else {
+          const suggestions = (data.suggestions || []).map(s => `
+            <div class="booking-item">
+              <strong>${s.start_time}–${s.end_time}</strong><br>
+              <span class="small">ว่าง: ${s.available_rooms.map(r => r.room_name).join(', ')}</span>
+            </div>`).join('');
+          box.innerHTML = `
+            <div class="status-box err">
+              <strong>ช่วงเวลานี้ไม่ว่างค่ะ</strong>
+              <div class="small">ลองเลือกเวลาอื่น หรือดูช่วงที่ใกล้เคียงด้านล่าง</div>
+              ${suggestions || ''}
+            </div>
+          `;
+        }
+      } catch (err) {
+        box.innerHTML = `<div class="status-box err">${err.message || err}</div>`;
+      }
+    }
+
+    async function createBooking() {
+      if (!state.lastAvailability || !state.lastAvailability.available) {
+        await checkAvailability();
+        return;
+      }
+
+      const payload = {
+        profile: state.profile,
+        line_user_id: state.profile.userId,
+        booking_date: $('bookingDate').value,
+        start_time: $('startTime').value,
+        end_time: $('endTime').value,
+        resource_id: $('resourceSelect').value
+      };
+
+      const box = $('availabilityResult');
+      box.innerHTML = '<div class="loading">กำลังสร้างการจอง...</div>';
+
+      try {
+        const data = await api('createSimulatorBooking', payload);
+        state.bookings.unshift(data.booking);
+        renderBookings();
+
+        const s = data.settings || {};
+        box.innerHTML = `
+          <div class="status-box warn">
+            <strong>สร้างการจองแล้ว — รอชำระเงิน</strong>
+            <div class="summary-row"><span class="k">Booking ID</span><span class="v">${data.booking.booking_id}</span></div>
+            <div class="summary-row"><span class="k">ยอดชำระ</span><span class="v">${data.booking.amount_due} บาท</span></div>
+            <div class="summary-row"><span class="k">ชำระภายใน</span><span class="v">${data.booking.payment_due_at}</span></div>
+            <div class="summary-row"><span class="k">โอนเข้าบัญชี</span><span class="v">${s.bank_name || '-'}<br>${s.bank_account_no || '-'}</span></div>
+            <div class="small" style="margin-top:10px">
+              หลังโอนแล้ว ส่งสลิปใน LINE chat เพื่อให้แอดมินยืนยันการจองค่ะ
+            </div>
+            <button class="btn btn-primary" style="margin-top:14px" onclick="sendPaymentSlipMessage()">ส่งสลิปใน LINE</button>
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<div class="status-box err">${err.message || err}</div>`;
+      }
+    }
+
+    function renderBookings() {
+      const wrap = $('bookingsList');
+      if (!state.bookings.length) {
+        wrap.innerHTML = '<div class="card">ยังไม่มีรายการจอง</div>';
+        return;
+      }
+
+      wrap.innerHTML = state.bookings.map(b => {
+        const status = String(b.booking_status || '').toLowerCase();
+        let tagClass = 'pending';
+        if (status.includes('confirmed')) tagClass = 'confirmed';
+        if (status.includes('cancel')) tagClass = 'cancelled';
+        return `
+          <div class="booking-item">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+              <strong>${b.resource_name || b.service_name || 'Simulator'}</strong>
+              <span class="tag ${tagClass}">${customerStatus(b.booking_status, b.payment_status)}</span>
+            </div>
+            <div class="summary-row"><span class="k">วันที่</span><span class="v">${b.booking_date || '-'}</span></div>
+            <div class="summary-row"><span class="k">เวลา</span><span class="v">${b.start_time || '-'}–${b.end_time || '-'}</span></div>
+            <div class="summary-row"><span class="k">ยอดชำระ</span><span class="v">${b.amount_due || 0} บาท</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function customerStatus(bookingStatus, paymentStatus) {
+      if (bookingStatus === 'Pending Payment') return 'รอชำระเงิน';
+      if (bookingStatus === 'Pending Verify') return 'รอตรวจสลิป';
+      if (bookingStatus === 'Confirmed') return 'ยืนยันแล้ว';
+      if (bookingStatus === 'Cancelled') return 'ยกเลิกแล้ว';
+      if (bookingStatus === 'Expired') return 'หมดเวลาชำระ';
+      return bookingStatus || paymentStatus || '-';
+    }
+
+    async function sendTrialChat() {
+      const text = (state.settings && state.settings.line_trial_text) || 'สนใจ Trial Lesson ค่ะ/ครับ';
+      await sendLineText(text);
+    }
+
+    async function sendContactAdmin() {
+      await sendLineText('ติดต่อแอดมินค่ะ/ครับ');
+    }
+
+    async function sendPaymentSlipMessage() {
+      await sendLineText('ส่งสลิปยืนยันการจองห้องซ้อมค่ะ/ครับ');
+    }
+
+    async function sendLineText(text) {
+      if (CONFIG.DEMO_MODE || typeof liff === 'undefined' || !liff.isInClient()) {
+        alert('Demo: ' + text);
+        return;
+      }
+      try {
+        await liff.sendMessages([{ type: 'text', text }]);
+        alert('ส่งข้อความใน LINE แล้วค่ะ');
+      } catch (err) {
+        alert('ไม่สามารถส่งข้อความได้ กรุณาส่งในแชท LINE โดยตรง');
+      }
+    }
+
+    async function submitTrialIntake() {
+      const payload = {
+        profile: state.profile,
+        line_user_id: state.profile.userId,
+        phone: $('trialPhone').value,
+        playing_level: $('trialLevel').value,
+        goal: $('trialGoal').value,
+        preferred_time: '',
+        dominant_hand: '',
+        has_injury: '',
+        has_own_clubs: ''
+      };
+      const box = $('trialResult');
+      box.innerHTML = '<div class="loading">กำลังส่งข้อมูล...</div>';
+      try {
+        const data = await api('createTrialIntake', payload);
+        box.innerHTML = '<div class="status-box ok">ส่งข้อมูลเรียบร้อยค่ะ</div>';
+      } catch (err) {
+        box.innerHTML = `<div class="status-box err">${err.message || err}</div>`;
+      }
+    }
+
+    function showPage(name) {
+      ['home','simulator','bookings','intake'].forEach(p => {
+        $('page-' + p).classList.toggle('hidden', p !== name);
+        $('nav-' + p).classList.toggle('active', p === name);
+      });
+    }
+
+    function toMin(t) {
+      const [h, m] = String(t).split(':').map(Number);
+      return h * 60 + (m || 0);
+    }
+
+    function minToTime(m) {
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+    }
+
+    function buildTimeOptions(interval) {
+      const out = [];
+      for (let m = 0; m < 24*60; m += interval) out.push(minToTime(m));
+      return out;
+    }
+
+    async function demoApi(action, payload) {
+      await new Promise(r => setTimeout(r, 250));
+      const demoRooms = [
+        { resource_id:'SIM-001', room_name:'Bay 1', position:'ริมซ้าย', machine_type:'TrackMan', price_per_hour:500 },
+        { resource_id:'SIM-002', room_name:'Bay 2', position:'กลาง', machine_type:'Golfzon', price_per_hour:500 },
+        { resource_id:'SIM-003', room_name:'Bay 3', position:'ริมขวา', machine_type:'TrackMan', price_per_hour:600 }
+      ];
+      if (action === 'getInitialData') return {
+        success:true,
+        credit:{ remaining_hours:10 },
+        simulator_options:{ rooms: demoRooms, opening_hours: [], time_options: buildTimeOptions(30) },
+        bookings:[],
+        settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0', line_trial_text:'สนใจ Trial Lesson ค่ะ/ครับ' }
+      };
+      if (action === 'checkSimulatorAvailability') {
+        const start = toMin(payload.start_time), end = toMin(payload.end_time);
+        const room = payload.resource_id === 'AUTO' ? demoRooms[0] : demoRooms.find(r => r.resource_id === payload.resource_id);
+        return { success:true, available:true, assigned_room:room, available_rooms:[room], duration_minutes:end-start, amount_due:Math.round((end-start)/60*Number(room.price_per_hour || 500)), booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time };
+      }
+      if (action === 'createSimulatorBooking') {
+        return { success:true, booking:{ booking_id:'BK-DEMO', resource_name:'Bay 1', booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time, amount_due:500, booking_status:'Pending Payment', payment_status:'Pending Payment', payment_due_at:'ภายใน 15 นาที' }, settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0' } };
+      }
+      if (action === 'createTrialIntake') return { success:true };
+      return { success:true };
+    }
+
+    main();
+  </script>
+</body>
+</html>
