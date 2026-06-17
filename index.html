@@ -207,6 +207,13 @@
     .nav-btn.active { background: var(--primary); color: #fff; }
     .hidden { display: none !important; }
     .small { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .qr-box { display:grid; place-items:center; background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px; margin-top:12px; }
+    .qr-box img { width:220px; max-width:100%; border-radius:14px; }
+    .file-input { background:#fff; border:1px dashed rgba(6,33,42,.25); border-radius:18px; padding:14px; margin-top:12px; }
+    .alt-room-btn { margin-top:10px; width:100%; text-align:left; justify-content:flex-start; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; word-break:break-all; }
+    .mini-note { padding:10px 12px; border-radius:14px; background:#F9FAFB; border:1px solid var(--line); margin-top:10px; }
+
     .loading {
       padding: 18px;
       text-align: center;
@@ -231,14 +238,14 @@
       <div class="logo"><img src="./assets/golf_booking_os_logo.png" onerror="this.style.display='none'; this.parentNode.textContent='⛳'"></div>
       <div>
         <div class="brand-title" id="brandName">Golf Booking OS</div>
-        <div class="brand-subtitle">Simulator-first v3</div>
+        <div class="brand-subtitle">Simulator-first v3.1</div>
       </div>
       <div class="pill" id="modePill">LIVE LIFF</div>
     </div>
 
     <section id="page-home">
-      <h1>จองห้องซ้อมผ่าน LINE</h1>
-      <p class="lead">เลือกเวลาเริ่ม-สิ้นสุด เลือก Bay/Room ได้ และชำระมัดจำเพื่อลด no-show</p>
+      <h1>จองห้องซ้อม + ชำระเงินผ่าน LINE</h1>
+      <p class="lead">เลือกเวลาเริ่ม-สิ้นสุด เลือก Bay/Room ได้ พร้อม QR ชำระเงินและอัปโหลดสลิป</p>
 
       <div id="initState" class="loading">กำลังโหลดระบบ...</div>
 
@@ -335,14 +342,14 @@
       <button class="nav-btn active" id="nav-home" onclick="showPage('home')">🏠<br>หน้าแรก</button>
       <button class="nav-btn" id="nav-simulator" onclick="showPage('simulator')">🏌️<br>จองห้อง</button>
       <button class="nav-btn" id="nav-bookings" onclick="showPage('bookings')">✅<br>ของฉัน</button>
-      <button class="nav-btn" id="nav-intake" onclick="showPage('intake')">📝<br>Intake</button>
+      <button class="nav-btn" id="nav-contact" onclick="sendContactAdmin()">💬<br>ติดต่อ</button>
     </div>
   </nav>
 
   <script>
     const CONFIG = {
       DEMO_MODE: false,
-      LIFF_ID: '2010420182-4tArGQul',
+      LIFF_ID: 'YOUR_LIFF_ID',
       GAS_WEB_APP_URL: '/api/gas',
       BRAND_NAME: 'Golf Booking OS Demo'
     };
@@ -511,26 +518,48 @@
               <div class="summary-row"><span class="k">เครื่อง</span><span class="v">${room.machine_type || '-'}</span></div>
               <div class="summary-row"><span class="k">ระยะเวลา</span><span class="v">${data.duration_minutes / 60} ชม.</span></div>
               <div class="summary-row"><span class="k">ยอดชำระ/มัดจำ</span><span class="v">${data.amount_due} บาท</span></div>
-              <button class="btn btn-accent" style="margin-top:14px" onclick="createBooking()">ยืนยันและรับรายละเอียดชำระเงิน</button>
+              <button class="btn btn-accent" style="margin-top:14px" onclick="createBooking()">ยืนยันและรับ QR ชำระเงิน</button>
             </div>
           `;
         } else {
-          const suggestions = (data.suggestions || []).map(s => `
-            <div class="booking-item">
-              <strong>${s.start_time}–${s.end_time}</strong><br>
-              <span class="small">ว่าง: ${s.available_rooms.map(r => r.room_name).join(', ')}</span>
-            </div>`).join('');
-          box.innerHTML = `
-            <div class="status-box err">
-              <strong>ช่วงเวลานี้ไม่ว่างค่ะ</strong>
-              <div class="small">ลองเลือกเวลาอื่น หรือดูช่วงที่ใกล้เคียงด้านล่าง</div>
-              ${suggestions || ''}
-            </div>
-          `;
+          const sameTimeRooms = data.alternative_rooms_same_time || [];
+          if (sameTimeRooms.length) {
+            const roomButtons = sameTimeRooms.map(r => `
+              <button class="btn btn-primary alt-room-btn" onclick="selectAlternativeRoom('${r.resource_id}')">
+                เลือก ${r.room_name}${r.position ? ' — ' + r.position : ''}${r.machine_type ? ' (' + r.machine_type + ')' : ''}
+              </button>
+            `).join('');
+            box.innerHTML = `
+              <div class="status-box warn">
+                <strong>ห้อง/เลนที่เลือกไม่ว่างค่ะ</strong>
+                <div class="small" style="margin-top:6px">แต่ช่วงเวลา ${data.start_time}–${data.end_time} ยังมีห้องอื่นว่าง</div>
+                <div style="margin-top:12px">${roomButtons}</div>
+              </div>
+            `;
+          } else {
+            const suggestions = (data.suggestions || []).map(s => `
+              <div class="booking-item">
+                <strong>${s.start_time}–${s.end_time}</strong><br>
+                <span class="small">ว่าง: ${s.available_rooms.map(r => r.room_name).join(', ')}</span>
+              </div>`).join('');
+            box.innerHTML = `
+              <div class="status-box err">
+                <strong>ช่วงเวลานี้ไม่ว่างค่ะ</strong>
+                <div class="small">ลองเลือกเวลาอื่น หรือดูช่วงที่ใกล้เคียงด้านล่าง</div>
+                ${suggestions || ''}
+              </div>
+            `;
+          }
         }
       } catch (err) {
         box.innerHTML = `<div class="status-box err">${err.message || err}</div>`;
       }
+    }
+
+    function selectAlternativeRoom(resourceId) {
+      $('resourceSelect').value = resourceId;
+      state.lastAvailability = null;
+      checkAvailability();
     }
 
     async function createBooking() {
@@ -553,21 +582,26 @@
 
       try {
         const data = await api('createSimulatorBooking', payload);
-        state.bookings.unshift(data.booking);
+        state.bookings.unshift({ ...data.booking, ...(data.payment || {}) });
         renderBookings();
 
         const s = data.settings || {};
+        const qr = data.payment && data.payment.qr_image_url ? data.payment.qr_image_url : data.qr_image_url;
         box.innerHTML = `
           <div class="status-box warn">
             <strong>สร้างการจองแล้ว — รอชำระเงิน</strong>
-            <div class="summary-row"><span class="k">Booking ID</span><span class="v">${data.booking.booking_id}</span></div>
+            <div class="summary-row"><span class="k">Booking ID</span><span class="v mono">${data.booking.booking_id}</span></div>
             <div class="summary-row"><span class="k">ยอดชำระ</span><span class="v">${data.booking.amount_due} บาท</span></div>
             <div class="summary-row"><span class="k">ชำระภายใน</span><span class="v">${data.booking.payment_due_at}</span></div>
-            <div class="summary-row"><span class="k">โอนเข้าบัญชี</span><span class="v">${s.bank_name || '-'}<br>${s.bank_account_no || '-'}</span></div>
-            <div class="small" style="margin-top:10px">
-              หลังโอนแล้ว ส่งสลิปใน LINE chat เพื่อให้แอดมินยืนยันการจองค่ะ
+            ${qr ? `<div class="qr-box"><img src="${qr}" alt="PromptPay QR"><div class="small">สแกน QR เพื่อชำระเงิน</div></div>` : ''}
+            <div class="summary-row"><span class="k">บัญชี</span><span class="v">${s.bank_name || '-'}<br>${s.bank_account_no || '-'}<br>${s.bank_account_name || s.payee_name || ''}</span></div>
+            <div class="small" style="margin-top:10px">หลังโอนแล้ว อัปโหลดสลิปด้านล่าง ระบบจะอ่านสลิปและเทียบยอดให้อัตโนมัติ</div>
+            <div class="file-input">
+              <input type="file" id="slipFile-${data.booking.booking_id}" accept="image/*">
+              <button class="btn btn-primary" style="margin-top:12px" onclick="uploadSlipForBooking('${data.booking.booking_id}')">อัปโหลดสลิปและตรวจอัตโนมัติ</button>
+              <button class="btn btn-outline" style="margin-top:10px" onclick="sendPaymentSlipMessage()">ส่งสลิปใน LINE แทน</button>
             </div>
-            <button class="btn btn-primary" style="margin-top:14px" onclick="sendPaymentSlipMessage()">ส่งสลิปใน LINE</button>
+            <div id="slipResult-${data.booking.booking_id}"></div>
           </div>
         `;
       } catch (err) {
@@ -587,15 +621,26 @@
         let tagClass = 'pending';
         if (status.includes('confirmed')) tagClass = 'confirmed';
         if (status.includes('cancel')) tagClass = 'cancelled';
+        const showUpload = ['Pending Payment','Pending Verify'].includes(b.booking_status) || String(b.payment_status || '').includes('Pending') || String(b.payment_status || '').includes('Auto');
         return `
           <div class="booking-item">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
               <strong>${b.resource_name || b.service_name || 'Simulator'}</strong>
               <span class="tag ${tagClass}">${customerStatus(b.booking_status, b.payment_status)}</span>
             </div>
+            <div class="summary-row"><span class="k">Booking ID</span><span class="v mono">${b.booking_id || '-'}</span></div>
             <div class="summary-row"><span class="k">วันที่</span><span class="v">${b.booking_date || '-'}</span></div>
             <div class="summary-row"><span class="k">เวลา</span><span class="v">${b.start_time || '-'}–${b.end_time || '-'}</span></div>
-            <div class="summary-row"><span class="k">ยอดชำระ</span><span class="v">${b.amount_due || 0} บาท</span></div>
+            <div class="summary-row"><span class="k">ยอดชำระ</span><span class="v">${b.amount_due || b.amount || 0} บาท</span></div>
+            ${b.auto_match_status ? `<div class="mini-note small">Auto Slip: ${b.auto_match_status}<br>${b.auto_match_note || ''}</div>` : ''}
+            ${b.qr_image_url ? `<div class="qr-box"><img src="${b.qr_image_url}" alt="PromptPay QR"><div class="small">QR ชำระเงินสำหรับรายการนี้</div></div>` : ''}
+            ${showUpload ? `
+              <div class="file-input">
+                <input type="file" id="slipFile-${b.booking_id}" accept="image/*">
+                <button class="btn btn-primary" style="margin-top:12px" onclick="uploadSlipForBooking('${b.booking_id}')">อัปโหลดสลิปและตรวจอัตโนมัติ</button>
+              </div>
+              <div id="slipResult-${b.booking_id}"></div>
+            ` : ''}
           </div>
         `;
       }).join('');
@@ -603,7 +648,7 @@
 
     function customerStatus(bookingStatus, paymentStatus) {
       if (bookingStatus === 'Pending Payment') return 'รอชำระเงิน';
-      if (bookingStatus === 'Pending Verify') return 'รอตรวจสลิป';
+      if (bookingStatus === 'Pending Verify') return paymentStatus === 'Auto Matched' ? 'สลิปตรงยอด / รอยืนยัน' : 'รอตรวจสลิป';
       if (bookingStatus === 'Confirmed') return 'ยืนยันแล้ว';
       if (bookingStatus === 'Cancelled') return 'ยกเลิกแล้ว';
       if (bookingStatus === 'Expired') return 'หมดเวลาชำระ';
@@ -617,6 +662,57 @@
 
     async function sendContactAdmin() {
       await sendLineText('ติดต่อแอดมินค่ะ/ครับ');
+    }
+
+    async function uploadSlipForBooking(bookingId) {
+      const input = $('slipFile-' + bookingId);
+      const resultBox = $('slipResult-' + bookingId);
+      if (!input || !input.files || !input.files[0]) {
+        alert('กรุณาเลือกรูปสลิปก่อนค่ะ');
+        return;
+      }
+      const file = input.files[0];
+      if (resultBox) resultBox.innerHTML = '<div class="loading">กำลังอัปโหลดและอ่านสลิป...</div>';
+      try {
+        const base64 = await fileToBase64(file);
+        const data = await api('submitPaymentSlip', {
+          profile: state.profile,
+          line_user_id: state.profile.userId,
+          booking_id: bookingId,
+          file_name: file.name,
+          mime_type: file.type || 'image/jpeg',
+          file_base64: base64
+        });
+        if (resultBox) {
+          const ok = data.auto_match_status === 'Auto Matched';
+          resultBox.innerHTML = `
+            <div class="status-box ${ok ? 'ok' : 'warn'}">
+              <strong>${ok ? 'ตรวจพบยอดตรงกับการจองค่ะ ✅' : 'ได้รับสลิปแล้วค่ะ'}</strong>
+              <div class="summary-row"><span class="k">ยอดที่อ่านได้</span><span class="v">${data.slip_amount || '-'} บาท</span></div>
+              <div class="small">${data.auto_match_note || 'แอดมินจะตรวจสอบเพิ่มเติม'}</div>
+            </div>`;
+        }
+        await refreshBookings();
+      } catch (err) {
+        if (resultBox) resultBox.innerHTML = `<div class="status-box err">${err.message || err}</div>`;
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',').pop());
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function refreshBookings() {
+      try {
+        const data = await api('getMyBookings', { line_user_id: state.profile.userId });
+        state.bookings = data.bookings || [];
+        renderBookings();
+      } catch (err) {}
     }
 
     async function sendPaymentSlipMessage() {
@@ -660,9 +756,13 @@
 
     function showPage(name) {
       ['home','simulator','bookings','intake'].forEach(p => {
-        $('page-' + p).classList.toggle('hidden', p !== name);
-        $('nav-' + p).classList.toggle('active', p === name);
+        const page = $('page-' + p);
+        if (page) page.classList.toggle('hidden', p !== name);
+        const nav = $('nav-' + p);
+        if (nav) nav.classList.toggle('active', p === name);
       });
+      const contactNav = $('nav-contact');
+      if (contactNav) contactNav.classList.remove('active');
     }
 
     function toMin(t) {
@@ -694,16 +794,19 @@
         credit:{ remaining_hours:10 },
         simulator_options:{ rooms: demoRooms, opening_hours: [], time_options: buildTimeOptions(30) },
         bookings:[],
-        settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0', line_trial_text:'สนใจ Trial Lesson ค่ะ/ครับ' }
+        settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0', bank_account_name:'Golf Demo', promptpay_id:'0800000000', line_trial_text:'สนใจ Trial Lesson ค่ะ/ครับ' }
       };
       if (action === 'checkSimulatorAvailability') {
         const start = toMin(payload.start_time), end = toMin(payload.end_time);
         const room = payload.resource_id === 'AUTO' ? demoRooms[0] : demoRooms.find(r => r.resource_id === payload.resource_id);
+        if (payload.resource_id === 'SIM-001') return { success:true, available:false, alternative_rooms_same_time:[demoRooms[1], demoRooms[2]], suggestions:[], duration_minutes:end-start, amount_due:0, booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time };
         return { success:true, available:true, assigned_room:room, available_rooms:[room], duration_minutes:end-start, amount_due:Math.round((end-start)/60*Number(room.price_per_hour || 500)), booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time };
       }
       if (action === 'createSimulatorBooking') {
-        return { success:true, booking:{ booking_id:'BK-DEMO', resource_name:'Bay 1', booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time, amount_due:500, booking_status:'Pending Payment', payment_status:'Pending Payment', payment_due_at:'ภายใน 15 นาที' }, settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0' } };
+        return { success:true, booking:{ booking_id:'BK-DEMO', resource_name:'Bay 2', booking_date:payload.booking_date, start_time:payload.start_time, end_time:payload.end_time, amount_due:500, booking_status:'Pending Payment', payment_status:'Pending Payment', payment_due_at:'ภายใน 15 นาที' }, payment:{ payment_id:'PAY-DEMO', qr_image_url:'https://promptpay.io/0800000000/500.00.png' }, settings:{ bank_name:'ธนาคารตัวอย่าง', bank_account_no:'000-0-00000-0', bank_account_name:'Golf Demo' } };
       }
+      if (action === 'submitPaymentSlip') return { success:true, auto_match_status:'Auto Matched', auto_match_note:'Demo: ยอดชำระตรงกับยอดจอง', slip_amount:500 };
+      if (action === 'getMyBookings') return { success:true, bookings:state.bookings };
       if (action === 'createTrialIntake') return { success:true };
       return { success:true };
     }
